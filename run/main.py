@@ -46,7 +46,7 @@ def index():
             return f"Bad Request: {msg}", 400
 
         try:
-            object_detection.blur_offensive_images(data)
+            object_detection.detect_objects(data)
             return ("", 204)
 
         except Exception as e:
