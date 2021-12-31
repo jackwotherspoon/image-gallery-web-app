@@ -8,6 +8,7 @@ provider "google" {
 resource "google_storage_bucket" "image_bucket" {
   name     = var.bucket_name
   location = var.region
+  force_destroy = true
 }
 
 # Enables the Cloud Run API
@@ -70,4 +71,17 @@ resource "google_project_iam_binding" "invoker_binding" {
 # Create a Pub/Sub Topic
 resource "google_pubsub_topic" "bucket_topic" {
   name = "cloud-storage-topic"
+}
+
+# Create a Pub/Sub Subscription
+resource "google_pubsub_subscription" "bucket_subscription" {
+  name  = "cloud-storage-subscription"
+  topic = google_pubsub_topic.bucket_topic.name
+  push_config {
+    push_endpoint = google_cloud_run_service.image_gallery_service.status[0].url
+
+    oidc_token {
+      service_account_email = google_service_account.run_invoker.email
+    }
+  }
 }
