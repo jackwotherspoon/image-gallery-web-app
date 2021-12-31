@@ -48,6 +48,26 @@ resource "google_cloud_run_service_iam_policy" "noauth" {
   location    = google_cloud_run_service.image_gallery_service.location
   project     = google_cloud_run_service.image_gallery_service.project
   service     = google_cloud_run_service.image_gallery_service.name
-
   policy_data = data.google_iam_policy.noauth.policy_data
+}
+
+# Create Service Account to Invoke Cloud Run
+resource "google_service_account" "run_invoker" {
+  account_id  = "run-pub-sub-invoker"
+  description = "Service account for invoking Cloud Run from Pub/Sub"
+  project     = var.project_id
+}
+
+# add IAM Policy Binding to Service Account
+resource "google_project_iam_binding" "invoker_binding" {
+  role    = "roles/run.invoker"
+  members = [
+    "serviceAccount:${google_service_account.run_invoker.email}"
+  ]
+  project = var.project_id
+}
+
+# Create a Pub/Sub Topic
+resource "google_pubsub_topic" "bucket_topic" {
+  name = "cloud-storage-topic"
 }
