@@ -22,4 +22,4 @@ def detect_objects(data):
     print(f"Number of objects detected: {len(objects)}")
 
     for object in objects:
-        print("\nObject: {}, Confidence: {})".format(object.name, object.score))
+        print(f"Object: {object.name}, Confidence: {object.score})")

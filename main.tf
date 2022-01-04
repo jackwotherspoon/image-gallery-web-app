@@ -21,6 +21,12 @@ resource "google_project_service" "run_api" {
   disable_on_destroy = true
 }
 
+# Enables the Cloud Vision API
+resource "google_project_service" "vision_api" {
+  service = "vision.googleapis.com"
+  disable_on_destroy = true
+}
+
 # Create a Cloud Run service
 resource "google_cloud_run_service" "image_gallery_service" {
   name     = "image-gallery-service"
