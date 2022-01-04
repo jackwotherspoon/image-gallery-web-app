@@ -4,6 +4,10 @@ provider "google" {
   region  = var.region
 }
 
+# access data about current project
+data "google_project" "project" {
+}
+
 # Create a GCS Bucket
 resource "google_storage_bucket" "image_bucket" {
   name     = var.bucket_name
@@ -54,7 +58,7 @@ resource "google_cloud_run_service_iam_policy" "noauth" {
 
 # Create Service Account to Invoke Cloud Run
 resource "google_service_account" "run_invoker" {
-  account_id  = "run-pub-sub-invoker"
+  account_id  = "cloud-run-pub-sub-invoker"
   description = "Service account for invoking Cloud Run from Pub/Sub"
   project     = var.project_id
 }
@@ -64,6 +68,15 @@ resource "google_project_iam_binding" "invoker_binding" {
   role    = "roles/run.invoker"
   members = [
     "serviceAccount:${google_service_account.run_invoker.email}"
+  ]
+  project = var.project_id
+}
+
+# Enable Pub/Sub to create authentication tokens
+resource "google_project_iam_binding" "token_binding" {
+  role    = "roles/iam.serviceAccountTokenCreator"
+  members = [
+    "serviceAccount:service-${data.google_project.project.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
   ]
   project = var.project_id
 }
@@ -84,4 +97,23 @@ resource "google_pubsub_subscription" "bucket_subscription" {
       service_account_email = google_service_account.run_invoker.email
     }
   }
+}
+
+# Configure Cloud Storage to publish Pub/Sub message
+resource "google_storage_notification" "notification" {
+  bucket         = google_storage_bucket.image_bucket.name
+  payload_format = "JSON_API_V1"
+  topic          = google_pubsub_topic.bucket_topic.id
+  event_types    = ["OBJECT_FINALIZE", "OBJECT_METADATA_UPDATE"]
+  depends_on = [google_pubsub_topic_iam_binding.binding]
+}
+
+# Enable notifications by giving the correct IAM permission to a unique service account.
+data "google_storage_project_service_account" "gcs_account" {
+}
+
+resource "google_pubsub_topic_iam_binding" "binding" {
+  topic   = google_pubsub_topic.bucket_topic.id
+  role    = "roles/pubsub.publisher"
+  members = ["serviceAccount:${data.google_storage_project_service_account.gcs_account.email_address}"]
 }
