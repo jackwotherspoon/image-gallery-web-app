@@ -27,6 +27,12 @@ resource "google_project_service" "vision_api" {
   disable_on_destroy = true
 }
 
+#Enables the Cloud Firestore API
+resource "google_project_service" "firestore_api" {
+  service = "firestore.googleapis.com"
+  disable_on_destroy = true
+}
+
 # Create a Cloud Run service
 resource "google_cloud_run_service" "image_gallery_service" {
   name     = "image-gallery-service"
@@ -122,4 +128,17 @@ resource "google_pubsub_topic_iam_binding" "binding" {
   topic   = google_pubsub_topic.bucket_topic.id
   role    = "roles/pubsub.publisher"
   members = ["serviceAccount:${data.google_storage_project_service_account.gcs_account.email_address}"]
+}
+
+# Enable App Engine (required for Firestore)
+resource "google_app_engine_application" "app" {
+  project     = var.project_id
+  location_id = "us-central"
+  database_type = "CLOUD_FIRESTORE"
+}
+
+# Create Firebase Project
+resource "google_firebase_project" "default" {
+  provider = google-beta
+  project  = var.project_id
 }
