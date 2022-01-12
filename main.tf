@@ -52,22 +52,6 @@ resource "google_cloud_run_service" "image_gallery_service" {
   depends_on = [google_project_service.run_api]
 }
 
-data "google_iam_policy" "noauth" {
-  binding {
-    role = "roles/run.invoker"
-    members = [
-      "allUsers",
-    ]
-  }
-}
-
-resource "google_cloud_run_service_iam_policy" "noauth" {
-  location    = google_cloud_run_service.image_gallery_service.location
-  project     = google_cloud_run_service.image_gallery_service.project
-  service     = google_cloud_run_service.image_gallery_service.name
-  policy_data = data.google_iam_policy.noauth.policy_data
-}
-
 # Create Service Account to Invoke Cloud Run
 resource "google_service_account" "run_invoker" {
   account_id  = "cloud-run-pub-sub-invoker"
